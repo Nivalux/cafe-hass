@@ -542,6 +542,39 @@ export class HomeAssistantAPI {
   }
 
   /**
+   * Home Assistant stores an automation under the id from the config URL, so saving
+   * with a stale id silently creates a second automation that shares the alias.
+   * Verify the id against the live config list and fall back to the alias owner.
+   */
+  async resolveAutomationId(automationId: string, alias: string): Promise<string> {
+    const configs = await this.getAutomationConfigs();
+    if (configs.length === 0) {
+      return automationId;
+    }
+
+    const asId = (value: unknown): string | null =>
+      value === undefined || value === null ? null : String(value);
+
+    if (configs.some((config) => asId(config.id) === automationId)) {
+      return automationId;
+    }
+
+    const wanted = alias.trim();
+    const owners = configs.filter(
+      (config) => typeof config.alias === 'string' && config.alias.trim() === wanted
+    );
+    const resolved = owners.length === 1 ? asId(owners[0].id) : null;
+
+    if (!resolved) {
+      throw new Error(
+        `no automation with id "${automationId}" exists and the name "${wanted}" does not match exactly one automation`
+      );
+    }
+
+    return resolved;
+  }
+
+  /**
    * Update an existing automation in Home Assistant
    */
   async updateAutomation(automationId: string, config: AutomationConfig): Promise<void> {
@@ -549,13 +582,15 @@ export class HomeAssistantAPI {
       console.log('C.A.F.E.: Updating automation with ID:', automationId);
       console.log('C.A.F.E.: Update config:', config);
 
+      const targetId = await this.resolveAutomationId(automationId, config.alias ?? '');
+
       // Spread all fields from config so nothing is accidentally stripped,
       // then normalise the keys HA requires (plural trigger/condition/action forms).
       const { trigger, condition, action, ...rest } = config;
       const configWithId = {
         ...rest,
-        id: automationId,
-        alias: config.alias || `C.A.F.E. Automation ${automationId}`,
+        id: targetId,
+        alias: config.alias || `C.A.F.E. Automation ${targetId}`,
         description: config.description || '',
         triggers: trigger || config.triggers || [],
         conditions: condition || config.conditions || [],
@@ -567,9 +602,9 @@ export class HomeAssistantAPI {
       console.log('C.A.F.E.: Final update payload:', configWithId);
 
       // Use POST method for updates (HA doesn't support PUT for automation config updates)
-      await this.fetchRestAPI(`config/automation/config/${automationId}`, 'POST', configWithId);
+      await this.fetchRestAPI(`config/automation/config/${targetId}`, 'POST', configWithId);
 
-      console.log('C.A.F.E.: Successfully updated automation:', automationId);
+      console.log('C.A.F.E.: Successfully updated automation:', targetId);
     } catch (error) {
       console.error('C.A.F.E.: Failed to update automation:', error);
       throw new Error(`Failed to update automation: ${describeHassError(error)}`);

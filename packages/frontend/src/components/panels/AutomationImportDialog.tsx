@@ -188,8 +188,8 @@ export function AutomationImportDialog({ isOpen, onClose }: AutomationImportDial
           fitView({ padding: 0.2, duration: 300 });
         }, 50);
 
-        setFlowName(automation.friendly_name || automation.automation_id);
-        setAutomationId(automation.automation_id);
+        setFlowName(config.alias?.trim() || automation.friendly_name || automation.automation_id);
+        setAutomationId(config.id != null ? String(config.id) : automation.automation_id);
 
         toast.success(
           t('dialogs:import.importSuccess', {
