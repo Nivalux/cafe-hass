@@ -6,7 +6,9 @@
     "descriptionUpdate": "Update this automation in Home Assistant",
     "nameLabel": "Automation Name",
     "descriptionLabel": "Description (Optional)",
-    "nameConflict": "Name already exists. Use: \"{{suggestedName}}\"?"
+    "nameConflict": "Name already exists. Use: \"{{suggestedName}}\"?",
+    "titleOverwrite": "Overwrite Automation",
+    "overwriteWarning": "An automation with this name already exists in Home Assistant. Saving replaces it."
   },
   "import": {
     "title": "Open Automation",

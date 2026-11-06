@@ -2,6 +2,9 @@
   "buttons": {
     "save": "Enregistrer",
     "saveAsCopy": "Enregistrer comme copie",
+    "create": "Créer",
+    "overwrite": "Écraser",
+    "rename": "Renommer",
     "cancel": "Annuler",
     "close": "Fermer",
     "delete": "Supprimer",

@@ -625,17 +625,23 @@ export class HomeAssistantAPI {
   }
 
   /**
-   * Check if an automation with the given alias already exists
+   * Get the ID of the automation that currently uses an alias.
+   * Aliases are not unique in Home Assistant, so this returns the first match.
    */
-  async automationExistsByAlias(alias: string): Promise<boolean> {
+  async getAutomationIdByAlias(alias: string): Promise<string | null> {
+    const trimmed = alias.trim();
+    if (!trimmed) {
+      return null;
+    }
+
     try {
       const configs = await this.getAutomationConfigs();
-      const exists = configs.some((config) => config.alias === alias);
+      const match = configs.find((config) => config.alias === trimmed);
 
-      return exists;
+      return match?.id ?? null;
     } catch (error) {
-      console.error('C.A.F.E.: Failed to check automation existence:', error);
-      return false;
+      console.error('C.A.F.E.: Failed to look up automation by alias:', error);
+      return null;
     }
   }
 
@@ -647,7 +653,7 @@ export class HomeAssistantAPI {
       let alias = baseAlias;
       let counter = 1;
 
-      while (await this.automationExistsByAlias(alias)) {
+      while ((await this.getAutomationIdByAlias(alias)) !== null) {
         alias = `${baseAlias} (${counter})`;
         counter++;
       }

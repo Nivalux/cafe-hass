@@ -14,8 +14,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useHass } from '@/contexts/HassContext';
+import type { HomeAssistant } from '@/types/hass';
 import { getHomeAssistantAPI } from '@/lib/ha-api';
+import { resolveSaveAction } from '@/lib/save-action';
 import { useFlowStore } from '@/store/flow-store';
+
+const ALIAS_LOOKUP_DEBOUNCE_MS = 300;
 
 interface AutomationSaveDialogProps {
   isOpen: boolean;
@@ -42,37 +46,69 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
   const [localDescription, setLocalDescription] = useState(flowDescription);
   const [error, setError] = useState<string | null>(null);
   const [suggestedName, setSuggestedName] = useState<string | null>(null);
+  const [openedAlias, setOpenedAlias] = useState(flowName);
+  const [aliasOwner, setAliasOwner] = useState<{ alias: string; id: string | null } | null>(null);
 
   const isUpdate = !!automationId;
+  const existingId = aliasOwner?.alias === flowName.trim() ? aliasOwner.id : null;
+  const saveAction = resolveSaveAction({
+    automationId,
+    alias: flowName,
+    originalAlias: openedAlias,
+    existingId,
+  });
 
-  // Sync local description with store when dialog opens
+  // Sync local description with store when dialog opens. The alias baseline is
+  // read imperatively so typing doesn't move what counts as a rename.
   useEffect(() => {
-    if (isOpen) {
-      setLocalDescription(flowDescription);
-      setError(null);
-      setSuggestedName(null);
+    if (!isOpen) {
+      return;
     }
+    setLocalDescription(flowDescription);
+    setError(null);
+    setSuggestedName(null);
+    setOpenedAlias(useFlowStore.getState().flowName);
   }, [isOpen, flowDescription]);
 
-  // Check for name conflicts when name changes
-  const checkNameConflict = async (name: string) => {
-    if (!name.trim()) {
-      setSuggestedName(null);
+  // Look up which automation owns the typed alias while the dialog is open
+  useEffect(() => {
+    if (!isOpen || !hass) {
+      setAliasOwner(null);
       return;
     }
 
-    try {
-      const exists = await getHomeAssistantAPI(hass).automationExistsByAlias(name);
-      if (exists && !isUpdate) {
-        const uniqueName = await getHomeAssistantAPI(hass).getUniqueAutomationAlias(name);
-        setSuggestedName(uniqueName);
-      } else {
-        setSuggestedName(null);
-      }
-    } catch (err) {
-      console.warn('Failed to check name conflict:', err);
-      setSuggestedName(null);
+    const alias = flowName.trim();
+    if (!alias) {
+      setAliasOwner(null);
+      return;
     }
+
+    let cancelled = false;
+    const timeout = setTimeout(async () => {
+      const api = getHomeAssistantAPI(hass);
+      const id = await api.getAutomationIdByAlias(alias);
+      if (cancelled) {
+        return;
+      }
+      setAliasOwner({ alias, id });
+      setSuggestedName(
+        id !== null && id !== automationId ? await api.getUniqueAutomationAlias(alias) : null
+      );
+    }, ALIAS_LOOKUP_DEBOUNCE_MS);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timeout);
+    };
+  }, [isOpen, flowName, hass, automationId]);
+
+  const saveToAutomation = async (targetId: string, hassApi: HomeAssistant) => {
+    if (targetId !== automationId) {
+      setAutomationId(targetId);
+    }
+    await updateAutomation(hassApi);
+
+    return targetId;
   };
 
   const handleSave = async () => {
@@ -92,13 +128,9 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
       // Update the flow store with the description
       setFlowDescription(localDescription.trim());
 
-      let resultId: string;
-      if (isUpdate) {
-        await updateAutomation(hass);
-        resultId = automationId || '';
-      } else {
-        resultId = await saveAutomation(hass);
-      }
+      const resultId = saveAction.targetId
+        ? await saveToAutomation(saveAction.targetId, hass)
+        : await saveAutomation(hass);
 
       onSaved?.(resultId);
       onClose();
@@ -112,11 +144,6 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
     setError(null);
     setSuggestedName(null);
     onClose();
-  };
-
-  const handleNameChange = (name: string) => {
-    setFlowName(name);
-    checkNameConflict(name);
   };
 
   const useSuggestedName = () => {
@@ -156,14 +183,16 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-x-hidden overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Save className="h-5 w-5" />
-            {isUpdate ? t('dialogs:save.titleUpdate') : t('dialogs:save.title')}
+            {t(saveAction.titleKey)}
           </DialogTitle>
           <DialogDescription>
-            {isUpdate ? t('dialogs:save.descriptionUpdate') : t('dialogs:save.description')}
+            {saveAction.targetId
+              ? t('dialogs:save.descriptionUpdate')
+              : t('dialogs:save.description')}
           </DialogDescription>
         </DialogHeader>
 
@@ -173,20 +202,32 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
             <Input
               id="automation-name"
               value={flowName}
-              onChange={(e) => handleNameChange(e.target.value)}
+              onChange={(e) => setFlowName(e.target.value)}
               placeholder={t('placeholders.enterAutomationName')}
               disabled={isSaving}
             />
           </div>
 
-          {suggestedName && (
-            <Alert>
+          {saveAction.foreignAliasId && (
+            <Alert variant={isUpdate ? 'destructive' : 'default'}>
               <AlertTriangle className="h-4 w-4" />
-              <AlertDescription className="flex items-center justify-between">
-                <span>{t('dialogs:save.nameConflict', { suggestedName })}</span>
-                <Button variant="outline" size="sm" onClick={useSuggestedName} disabled={isSaving}>
-                  {t('buttons.use')}
-                </Button>
+              <AlertDescription className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <span className="min-w-0 break-words">
+                  {isUpdate && suggestedName
+                    ? t('dialogs:save.nameConflict', { suggestedName })
+                    : t('dialogs:save.overwriteWarning')}
+                </span>
+                {suggestedName && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={useSuggestedName}
+                    disabled={isSaving}
+                    className="w-fit max-w-full whitespace-normal break-words"
+                  >
+                    {isUpdate ? t('buttons.use') : suggestedName}
+                  </Button>
+                )}
               </AlertDescription>
             </Alert>
           )}
@@ -214,7 +255,7 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
             <Button variant="outline" onClick={handleClose} disabled={isSaving}>
               {t('buttons.cancel')}
             </Button>
-            {isUpdate && (
+            {(isUpdate || saveAction.foreignAliasId) && (
               <Button
                 variant="outline"
                 onClick={handleSaveAsCopy}
@@ -228,7 +269,11 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
                 {t('buttons.saveAsCopy')}
               </Button>
             )}
-            <Button onClick={handleSave} disabled={isSaving || !flowName.trim()}>
+            <Button
+              onClick={handleSave}
+              disabled={isSaving || !flowName.trim()}
+              className="whitespace-normal"
+            >
               {isSaving ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -237,7 +282,7 @@ export function AutomationSaveDialog({ isOpen, onClose, onSaved }: AutomationSav
               ) : (
                 <>
                   <Check className="mr-2 h-4 w-4" />
-                  {isUpdate ? t('buttons.update') : t('buttons.save')}
+                  {t(saveAction.labelKey)}
                 </>
               )}
             </Button>

@@ -2,6 +2,9 @@
   "buttons": {
     "save": "保存",
     "saveAsCopy": "另存为副本",
+    "create": "新建",
+    "overwrite": "覆盖",
+    "rename": "重命名",
     "cancel": "取消",
     "close": "关闭",
     "delete": "删除",

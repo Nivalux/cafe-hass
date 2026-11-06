@@ -6,7 +6,9 @@
     "descriptionUpdate": "Diese Automatisierung in Home Assistant aktualisieren",
     "nameLabel": "Automatisierungsname",
     "descriptionLabel": "Beschreibung (Optional)",
-    "nameConflict": "Name existiert bereits. Verwenden: \"{{suggestedName}}\"?"
+    "nameConflict": "Name existiert bereits. Verwenden: \"{{suggestedName}}\"?",
+    "titleOverwrite": "Automatisierung überschreiben",
+    "overwriteWarning": "Eine Automatisierung mit diesem Namen existiert bereits in Home Assistant. Speichern ersetzt sie."
   },
   "import": {
     "title": "Automatisierung öffnen",

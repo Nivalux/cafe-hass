@@ -6,7 +6,9 @@
     "descriptionUpdate": "在Home Assistant中更新此自动化",
     "nameLabel": "自动化名称",
     "descriptionLabel": "描述（可选）",
-    "nameConflict": "名称已存在。使用：\"{{suggestedName}}\"？"
+    "nameConflict": "名称已存在。使用：\"{{suggestedName}}\"？",
+    "titleOverwrite": "覆盖自动化",
+    "overwriteWarning": "Home Assistant 中已存在同名自动化。保存将替换它。"
   },
   "import": {
     "title": "打开自动化",

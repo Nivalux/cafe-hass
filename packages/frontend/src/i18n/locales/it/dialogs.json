@@ -6,7 +6,9 @@
     "descriptionUpdate": "Aggiorna questa automazione in Home Assistant",
     "nameLabel": "Nome Automazione",
     "descriptionLabel": "Descrizione (Opzionale)",
-    "nameConflict": "Il nome esiste già. Usare: \"{{suggestedName}}\"?"
+    "nameConflict": "Il nome esiste già. Usare: \"{{suggestedName}}\"?",
+    "titleOverwrite": "Sovrascrivi automazione",
+    "overwriteWarning": "Un'automazione con questo nome esiste già in Home Assistant. Il salvataggio la sostituisce."
   },
   "import": {
     "title": "Apri Automazione",

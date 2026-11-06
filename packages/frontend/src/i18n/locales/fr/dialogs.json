@@ -6,7 +6,9 @@
     "descriptionUpdate": "Mettre à jour cette automatisation dans Home Assistant",
     "nameLabel": "Nom de l'automatisation",
     "descriptionLabel": "Description (Optionnel)",
-    "nameConflict": "Le nom existe déjà. Utiliser : \"{{suggestedName}}\" ?"
+    "nameConflict": "Le nom existe déjà. Utiliser : \"{{suggestedName}}\" ?",
+    "titleOverwrite": "Écraser l'automatisation",
+    "overwriteWarning": "Une automatisation portant ce nom existe déjà dans Home Assistant. Enregistrer la remplace."
   },
   "import": {
     "title": "Ouvrir l'automatisation",
