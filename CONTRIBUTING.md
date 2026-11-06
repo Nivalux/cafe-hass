@@ -49,6 +49,9 @@ The `justfile` wraps the commands above plus the Home Assistant harness; run `ju
   official Home Assistant container, using Home Assistant's own automation validator. This
   catches YAML that C.A.F.E. accepts but Home Assistant rejects (fixtures prefixed with
   `must-fail-` are expected to be rejected, which keeps the harness honest).
+- `just bundle` — builds the panel and packs `custom_components/cafe` into
+  `dist-ha/cafe-<version>-<sha>.tar.gz`, for copying onto a running Home Assistant
+  (unpack it over `<config>/custom_components` and restart)
 - `just ha-up` / `just ha-logs` / `just ha-down` — a throwaway Home Assistant on
   http://localhost:8123 with the C.A.F.E. panel built in, for manual testing
 

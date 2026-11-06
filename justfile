@@ -7,6 +7,7 @@ ha_image := "ghcr.io/home-assistant/home-assistant:latest"
 ha_name := "cafe-ha-validation"
 ha_port := "8123"
 ha_data := env_var_or_default("HOME", "/tmp") + "/.cache/cafe-ha-validation"
+bundle_dir := "dist-ha"
 yarn := "./tools/run-yarn.sh"
 
 _default:
@@ -55,6 +56,23 @@ test-podman:
     {{ yarn }} build
     CAFE_HA_IMAGE={{ ha_image }} ./tools/ha-validation/run.sh
 
+# Package custom_components/cafe into a tarball for a manual install
+#
+# Unpack it over <home assistant config>/custom_components and restart, which is
+# how a branch gets onto an instance that was installed through HACS. HACS keeps
+# its own record of the installed version, so a HACS "Reinstall" reverts it.
+bundle:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    {{ yarn }} install
+    {{ yarn }} build:ha
+    version=$(python3 -c "import json; print(json.load(open('custom_components/cafe/manifest.json'))['version'])")
+    archive={{ bundle_dir }}/cafe-$version-$(git describe --always --dirty).tar.gz
+    mkdir -p {{ bundle_dir }}
+    tar czf "$archive" --exclude='__pycache__' -C custom_components cafe
+    ls -lh "$archive"
+    echo "install it with: scp $archive ha:/tmp/ && ssh ha 'cd /config/custom_components && tar xzf /tmp/$(basename $archive)'"
+
 # Start a throwaway Home Assistant to click through the editor yourself
 ha-up:
     #!/usr/bin/env bash
@@ -76,7 +94,7 @@ ha-down:
 
 # Remove build output and dependencies
 clean:
-    rm -rf node_modules packages/*/dist packages/*/.turbo .turbo
+    rm -rf node_modules packages/*/dist packages/*/.turbo .turbo {{ bundle_dir }}
 
 _biome args:
     #!/usr/bin/env bash
