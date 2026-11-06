@@ -1,6 +1,8 @@
 {
   "conditionGroupEditor": {
     "noConditions": "尚未添加条件",
+    "emptyGroupHint": "此分组没有任何条件 —— Home Assistant 不进行检查并直接继续。",
+    "singleConditionHint": "此分组只有一个条件，效果与没有分组相同。",
     "addCondition": "添加条件"
   }
 }

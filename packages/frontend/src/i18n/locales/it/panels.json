@@ -1,6 +1,8 @@
 {
   "conditionGroupEditor": {
     "noConditions": "Nessuna condizione aggiunta",
+    "emptyGroupHint": "Questo gruppo non ha condizioni: Home Assistant non controlla nulla e prosegue sempre.",
+    "singleConditionHint": "Una sola condizione in questo gruppo equivale a nessun gruppo.",
     "addCondition": "Aggiungi Condizione"
   }
 }

@@ -108,7 +108,7 @@ export function ConditionFields({ node, onChange, entities }: ConditionFieldsPro
           <ConditionGroupEditor
             conditions={(nodeData.conditions as ConditionNodeData[]) || []}
             onChange={(conds) => onChange('conditions', conds)}
-            parentType={isGroupType ? (conditionType as 'and' | 'or' | 'not') : 'and'}
+            parentType={isGroupType ? (conditionType as 'and' | 'or' | 'not') : null}
           />
         </FormField>
       )}

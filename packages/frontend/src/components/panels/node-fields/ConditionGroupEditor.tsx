@@ -24,7 +24,8 @@ import type { HassEntity } from '@/types/hass';
 interface ConditionGroupEditorProps {
   conditions: ConditionNodeData[];
   onChange: (newConditions: ConditionNodeData[]) => void;
-  parentType: 'and' | 'or' | 'not';
+  /** Null when the parent is a plain condition carrying a list, not a logical group. */
+  parentType: 'and' | 'or' | 'not' | null;
   depth?: number;
 }
 
@@ -142,9 +143,52 @@ function ConditionCard({
   );
 }
 
+type GroupHint = 'empty' | 'single' | null;
+
+/**
+ * Mirrors validateConditionTree in @cafe/shared: an empty AND/OR checks nothing
+ * at all in Home Assistant, a single one is the same as no group. NOT negates
+ * fine on its own, so it only ever complains about being empty.
+ */
+function getGroupHint(parentType: 'and' | 'or' | 'not' | null, count: number): GroupHint {
+  if (parentType === null) {
+    return null;
+  }
+
+  if (count === 0) {
+    return parentType === 'not' ? null : 'empty';
+  }
+
+  if (count === 1 && parentType !== 'not') {
+    return 'single';
+  }
+
+  return null;
+}
+
+function GroupHintNotice({ hint }: { hint: Exclude<GroupHint, null> }) {
+  const { t } = useTranslation(['panels']);
+
+  return (
+    <p
+      className={cn(
+        'rounded border px-2 py-1 text-xs',
+        hint === 'empty'
+          ? 'border-destructive/40 bg-destructive/10 text-destructive'
+          : 'border-amber-400/60 bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
+      )}
+    >
+      {hint === 'empty'
+        ? t('panels:conditionGroupEditor.emptyGroupHint')
+        : t('panels:conditionGroupEditor.singleConditionHint')}
+    </p>
+  );
+}
+
 export const ConditionGroupEditor = memo(function ConditionGroupEditor({
   conditions,
   onChange,
+  parentType,
   depth = 0,
 }: ConditionGroupEditorProps) {
   const { hass } = useHass();
@@ -163,8 +207,11 @@ export const ConditionGroupEditor = memo(function ConditionGroupEditor({
     onChange(conditions.map((c, i) => (i === idx ? newCond : c)));
   };
 
+  const hint = getGroupHint(parentType, conditions.length);
+
   return (
     <div className={cn('space-y-2', depth > 0 && 'border-muted border-l-2 pl-2')}>
+      {hint && <GroupHintNotice hint={hint} />}
       {conditions.length === 0 ? (
         <p className="py-2 text-muted-foreground text-xs italic">
           {t('panels:conditionGroupEditor.noConditions')}
