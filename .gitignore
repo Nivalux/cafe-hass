@@ -42,3 +42,7 @@ custom_components/cafe/www/
 # Python
 __pycache__/
 *.pyc
+
+# Nix build results
+result
+result-*
