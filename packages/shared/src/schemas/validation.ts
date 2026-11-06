@@ -205,6 +205,16 @@ export const TriggerNodeValidationSchema = z
         }
         break;
 
+      case 'scene':
+        if (!hasEntityId(data.entity_id) && data.target === undefined) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            message: 'Scene is required for scene triggers',
+            path: ['entity_id'],
+          });
+        }
+        break;
+
       case 'sun':
       case 'homeassistant':
         if (!data.event || data.event.trim() === '') {

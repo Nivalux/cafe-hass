@@ -13,6 +13,7 @@ export const TriggerPlatformSchema = z.enum([
   'webhook',
   'sun',
   'zone',
+  'scene',
   'numeric_state',
   'template',
   'homeassistant',

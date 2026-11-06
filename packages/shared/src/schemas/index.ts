@@ -101,8 +101,12 @@ export {
 // Trigger platform key compatibility (HA 2026.10 rejects keys of other platforms)
 export {
   getForeignTriggerKeys,
+  getSceneTargetEntityId,
   isKnownTriggerPlatform,
   pickTriggerKeysForPlatform,
+  SCENE_ACTIVATED_TRIGGER,
+  SCENE_TRIGGER_PLATFORM,
+  toHomeAssistantTriggerBlock,
   TRIGGER_PLATFORM_KEYS,
 } from './trigger-keys';
 // Validation schemas for UI

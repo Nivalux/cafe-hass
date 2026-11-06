@@ -11,6 +11,7 @@ export interface FieldConfig {
   type: SelectorType;
   required: boolean;
   multiple?: boolean;
+  domainFilter?: string;
   placeholder?: string;
   description?: string;
   options?: Array<{ value: string; label: string }>;
@@ -282,6 +283,19 @@ export const TRIGGER_PLATFORM_FIELDS: Record<TriggerPlatform, FieldConfig[]> = {
         { value: 'shutdown', label: 'Shutdown' },
       ],
       default: 'start',
+    },
+  ],
+
+  // Scene trigger: fires when one of the scenes is activated
+  scene: [
+    {
+      name: 'entity_id',
+      label: 'Scene',
+      type: 'entity',
+      required: true,
+      multiple: true,
+      domainFilter: 'scene',
+      description: 'Fires when one of these scenes is activated',
     },
   ],
 

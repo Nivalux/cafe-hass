@@ -4,7 +4,9 @@ import {
   getForeignTriggerKeys,
   isKnownTriggerPlatform,
   pickTriggerKeysForPlatform,
+  toHomeAssistantTriggerBlock,
 } from '../schemas/trigger-keys';
+import { HATriggerSchema } from '../schemas/ha-schemas';
 
 describe('Home Assistant 2026.10 trigger platform key compatibility', () => {
   it('reports state trigger keys left on a sun trigger', () => {
@@ -111,6 +113,28 @@ describe('Home Assistant 2026.10 trigger platform key compatibility', () => {
     expect(pickTriggerKeysForPlatform('sun', data)).toBe(data);
   });
 
+  it('keeps the scenes of a scene trigger and reports the state keys it never had', () => {
+    expect(
+      getForeignTriggerKeys('scene', {
+        trigger: 'scene',
+        entity_id: 'scene.movie_time',
+        to: 'on',
+        from: 'off',
+        for: { minutes: 5 },
+      })
+    ).toEqual(['to', 'from', 'for']);
+  });
+
+  it('reports a target left on a platform that takes none', () => {
+    expect(
+      getForeignTriggerKeys('state', {
+        trigger: 'state',
+        entity_id: 'light.living',
+        target: { entity_id: 'light.living' },
+      })
+    ).toEqual(['target']);
+  });
+
   it('drops the foreign keys and keeps the rest', () => {
     expect(
       pickTriggerKeysForPlatform('sun', {
@@ -121,5 +145,52 @@ describe('Home Assistant 2026.10 trigger platform key compatibility', () => {
         to: 'off',
       })
     ).toEqual({ trigger: 'sun', event: 'sunset', offset: '+00:30:00' });
+  });
+});
+
+describe('Trigger blocks Home Assistant shapes differently from node data', () => {
+  it('writes the scenes of a scene trigger into its target', () => {
+    expect(
+      toHomeAssistantTriggerBlock({ trigger: 'scene', entity_id: ['scene.movie', 'scene.bed'] })
+    ).toEqual({
+      trigger: 'scene.activated',
+      target: { entity_id: ['scene.movie', 'scene.bed'] },
+    });
+  });
+
+  it('accepts a scene trigger that already stores its scenes in a target', () => {
+    expect(
+      toHomeAssistantTriggerBlock({ trigger: 'scene', target: { entity_id: 'scene.movie' } })
+    ).toEqual({ trigger: 'scene.activated', target: { entity_id: 'scene.movie' } });
+  });
+
+  it('leaves the block of every other platform as it is', () => {
+    const block = { trigger: 'state', entity_id: 'light.living', to: 'on' };
+    expect(toHomeAssistantTriggerBlock(block)).toEqual(block);
+  });
+
+  it('reads the scenes of a scene.activated trigger back into a flat entity_id', () => {
+    expect(
+      HATriggerSchema.parse({ trigger: 'scene.activated', target: { entity_id: 'scene.movie' } })
+    ).toEqual({ trigger: 'scene', entity_id: 'scene.movie' });
+    expect(
+      HATriggerSchema.parse({
+        trigger: 'scene.activated',
+        target: { entity_id: ['scene.movie', 'scene.bed'] },
+      })
+    ).toEqual({ trigger: 'scene', entity_id: ['scene.movie', 'scene.bed'] });
+  });
+
+  it('keeps a target that selects more than scenes', () => {
+    expect(
+      HATriggerSchema.parse({ trigger: 'scene.activated', target: { device_id: 'abc' } })
+    ).toEqual({ trigger: 'scene', target: { device_id: 'abc' } });
+  });
+
+  it('normalizes the legacy platform key of platforms that need no reshape', () => {
+    expect(HATriggerSchema.parse({ platform: 'sun', event: 'sunset' })).toEqual({
+      trigger: 'sun',
+      event: 'sunset',
+    });
   });
 });

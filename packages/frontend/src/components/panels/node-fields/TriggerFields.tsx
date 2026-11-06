@@ -72,6 +72,7 @@ export function TriggerFields({ node, onChange, entities }: TriggerFieldsProps) 
             <SelectItem value="mqtt">{t('nodes:triggers.platforms.mqtt')}</SelectItem>
             <SelectItem value="webhook">{t('nodes:triggers.platforms.webhook')}</SelectItem>
             <SelectItem value="zone">{t('nodes:triggers.platforms.zone')}</SelectItem>
+            <SelectItem value="scene">{t('nodes:triggers.platforms.scene')}</SelectItem>
             <SelectItem value="template">{t('nodes:triggers.platforms.template')}</SelectItem>
             <SelectItem value="homeassistant">
               {t('nodes:triggers.platforms.homeassistant')}

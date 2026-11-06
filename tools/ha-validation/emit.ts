@@ -59,12 +59,26 @@ const flows: Record<string, FlowGraph> = {
         position: pos,
         data: { trigger: 'sun', event: 'sunset', entity_id: 'light.living' },
       },
-      { id: 'trigger-2', type: 'trigger', position: pos, data: { trigger: 'sun', event: 'sunrise' } },
+      {
+        id: 'trigger-2',
+        type: 'trigger',
+        position: pos,
+        data: { trigger: 'sun', event: 'sunrise' },
+      },
       action,
       { id: 'action-2', type: 'action', position: pos, data: { service: 'light.turn_off' } },
     ],
     [edge('trigger-1', 'action'), edge('trigger-2', 'action-2')]
   ),
+  'scene-moves-scenes-into-target': graph([
+    {
+      id: 'trigger',
+      type: 'trigger',
+      position: pos,
+      data: { trigger: 'scene', entity_id: ['scene.test', 'scene.evening'], to: 'on' },
+    },
+    action,
+  ]),
   'wait-for-trigger-drops-state-keys': graph([
     {
       id: 'trigger',
@@ -127,9 +141,36 @@ actions:
       entity_id: light.living
 mode: single
 `,
+  'scene-activated-from-ha-editor': `
+alias: Scene lights
+triggers:
+  - trigger: scene.activated
+    target:
+      entity_id:
+        - scene.test
+        - scene.evening
+conditions: []
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living
+mode: single
+`,
 };
 
 const invalid: Record<string, string> = {
+  'must-fail-scene-with-flat-entity-id': `
+alias: Scene lights
+triggers:
+  - trigger: scene
+    entity_id: scene.test
+conditions: []
+actions:
+  - action: light.turn_on
+    target:
+      entity_id: light.living
+mode: single
+`,
   'must-fail-sun-with-state-keys': `
 alias: Sunset lights
 triggers:

@@ -1,4 +1,9 @@
 import { z } from 'zod';
+import {
+  getSceneTargetEntityId,
+  SCENE_ACTIVATED_TRIGGER,
+  SCENE_TRIGGER_PLATFORM,
+} from './trigger-keys';
 
 /**
  * List of valid Home Assistant weekday strings.
@@ -73,6 +78,7 @@ export const HAPlatformEnum = z.enum([
   'homeassistant',
   'device',
   'calendar',
+  SCENE_ACTIVATED_TRIGGER,
 ]);
 export type HAPlatform = z.infer<typeof HAPlatformEnum>;
 
@@ -145,9 +151,30 @@ export const HATriggerSchema = z
     const trigger = input.trigger ?? input.platform ?? 'state';
     // Remove the legacy 'platform' key
     const { platform: _platform, ...rest } = input;
+
+    if (trigger !== SCENE_ACTIVATED_TRIGGER) {
+      return {
+        ...rest,
+        trigger,
+      };
+    }
+
+    // Home Assistant registers the scene trigger as `scene.activated` and names
+    // its scenes in a target selector, while C.A.F.E. stores it as the `scene`
+    // platform with a flat entity_id, so the block is read into that shape.
+    const { target, ...withoutTarget } = rest;
+    const scenes = getSceneTargetEntityId(target);
+    if (scenes === undefined) {
+      return {
+        ...withoutTarget,
+        ...(target === undefined ? {} : { target }),
+        trigger: SCENE_TRIGGER_PLATFORM,
+      };
+    }
     return {
-      ...rest,
-      trigger,
+      ...withoutTarget,
+      trigger: SCENE_TRIGGER_PLATFORM,
+      entity_id: scenes,
     };
   });
 

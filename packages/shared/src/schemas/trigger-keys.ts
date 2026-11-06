@@ -12,6 +12,7 @@ export const TRIGGER_PLATFORM_KEYS = {
   webhook: ['webhook_id'],
   template: ['value_template', 'for'],
   homeassistant: ['event'],
+  scene: ['entity_id', 'target'],
 } as const satisfies Partial<Record<TriggerPlatform, readonly string[]>>;
 
 const EXTRA_KEY_OWNERS: Record<string, readonly string[]> = {
@@ -64,4 +65,69 @@ export function pickTriggerKeysForPlatform(
     return data;
   }
   return Object.fromEntries(Object.entries(data).filter(([key]) => !foreignKeys.includes(key)));
+}
+
+/**
+ * C.A.F.E. stores a scene trigger as the `scene` platform with a flat
+ * `entity_id`. Home Assistant registers it as `scene.activated` and takes its
+ * scenes in a target selector, so the two shapes differ in both places.
+ */
+export const SCENE_TRIGGER_PLATFORM = 'scene';
+export const SCENE_ACTIVATED_TRIGGER = 'scene.activated';
+
+/**
+ * The trigger block to write to YAML for a normalized C.A.F.E. trigger block.
+ *
+ * Platforms that name themselves the way C.A.F.E. stores them are returned
+ * unchanged; only the scene trigger is renamed and has its scenes moved into
+ * the `target` selector Home Assistant defines for it.
+ */
+export function toHomeAssistantTriggerBlock(
+  block: Readonly<Record<string, unknown>>
+): Record<string, unknown> {
+  const name = typeof block.trigger === 'string' ? block.trigger : undefined;
+  if (name !== SCENE_TRIGGER_PLATFORM && name !== SCENE_ACTIVATED_TRIGGER) {
+    return { ...block };
+  }
+
+  const { trigger: _trigger, entity_id: entityId, target, ...rest } = block;
+  const targetBlock = isRecord(target) ? target : undefined;
+  const { entity_id: _targetEntityId, ...targetRest } = targetBlock ?? {};
+  const scenes = entityId ?? getSceneTargetEntityId(target);
+
+  if (scenes === undefined) {
+    return { trigger: SCENE_ACTIVATED_TRIGGER, ...rest, ...(targetBlock ? { target } : {}) };
+  }
+  return {
+    trigger: SCENE_ACTIVATED_TRIGGER,
+    ...rest,
+    target: { ...targetRest, entity_id: scenes },
+  };
+}
+
+/**
+ * The scenes a target selector of a scene trigger names.
+ *
+ * Used when reading Home Assistant YAML, where the scenes of a `scene.activated`
+ * trigger live in `target` instead of the flat `entity_id` C.A.F.E. stores. A
+ * target naming devices, areas or floors as well returns nothing, because the
+ * editor has no fields for those and must not pretend they are scenes.
+ */
+export function getSceneTargetEntityId(target: unknown): string | string[] | undefined {
+  if (!isRecord(target)) {
+    return undefined;
+  }
+  const entityId = target.entity_id;
+  if (typeof entityId === 'string') {
+    return entityId;
+  }
+  return isStringArray(entityId) ? entityId : undefined;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item): item is string => typeof item === 'string');
 }

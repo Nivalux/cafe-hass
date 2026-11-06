@@ -1,5 +1,5 @@
 import type { FlowGraph, TriggerNode } from '@cafe/shared';
-import { pickTriggerKeysForPlatform } from '@cafe/shared';
+import { pickTriggerKeysForPlatform, toHomeAssistantTriggerBlock } from '@cafe/shared';
 import type { TopologyAnalysis } from '../analyzer/topology';
 
 /**
@@ -108,11 +108,20 @@ export abstract class BaseStrategy implements TranspilerStrategy {
   }
 }
 
+/**
+ * Turn the data of a trigger node into the trigger block of a YAML file.
+ *
+ * Keys of other platforms and empty values are dropped, and the block is named
+ * and shaped the way Home Assistant registers the platform, which differs from
+ * the node data for the scene trigger.
+ */
 export function normalizeTriggerConfig(
   data: Readonly<Record<string, unknown>>
 ): Record<string, unknown> {
   const cleaned = pickTriggerKeysForPlatform(data.trigger ?? data.platform, { ...data });
-  return Object.fromEntries(
-    Object.entries(cleaned).filter(([, v]) => v !== undefined && v !== '' && v !== null)
+  return toHomeAssistantTriggerBlock(
+    Object.fromEntries(
+      Object.entries(cleaned).filter(([, v]) => v !== undefined && v !== '' && v !== null)
+    )
   );
 }

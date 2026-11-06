@@ -289,6 +289,7 @@ export function DynamicFieldRenderer({
         // Check for multiple entities support from both static and dynamic configs
         const isMultiple =
           ('multiple' in field && field.multiple) || selectorConfig.multiple === true;
+        const entityDomainFilter = 'domainFilter' in field ? field.domainFilter : undefined;
 
         if (isMultiple) {
           // Coerce value to an array, handling both strings and existing arrays
@@ -303,6 +304,7 @@ export function DynamicFieldRenderer({
               value={values}
               onChange={onChange}
               entities={entities}
+              domainFilter={entityDomainFilter}
               placeholder={placeholder || t('dynamicField.selectEntities')}
             />
           );
@@ -313,6 +315,7 @@ export function DynamicFieldRenderer({
             value={stringValue}
             onChange={onChange}
             entities={entities}
+            domainFilter={entityDomainFilter}
             placeholder={placeholder || t('dynamicField.selectEntity')}
           />
         );

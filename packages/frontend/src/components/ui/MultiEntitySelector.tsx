@@ -8,6 +8,8 @@ interface MultiEntitySelectorProps {
   onChange: (value: string[]) => void;
   /** Optional entities list. If not provided, EntitySelector auto-fetches from useHass() */
   entities?: HassEntity[];
+  /** Optional domain filter (e.g., 'scene') */
+  domainFilter?: string | string[];
   placeholder?: string;
   className?: string;
 }
@@ -16,6 +18,7 @@ export function MultiEntitySelector({
   value,
   onChange,
   entities,
+  domainFilter,
   placeholder = 'Select entities...',
   className,
 }: MultiEntitySelectorProps) {
@@ -34,6 +37,7 @@ export function MultiEntitySelector({
         value={''}
         onChange={handleAdd}
         entities={entities}
+        domainFilter={domainFilter}
         placeholder={placeholder}
         className="w-full"
       />

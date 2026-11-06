@@ -40,6 +40,7 @@
       "mqtt": "MQTT",
       "webhook": "Webhook",
       "zone": "Zone",
+      "scene": "Szene",
       "template": "Vorlage",
       "homeassistant": "Home Assistant",
       "device": "Gerät",

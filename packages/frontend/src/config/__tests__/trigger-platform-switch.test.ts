@@ -48,6 +48,18 @@ describe('Switching a trigger node to another platform', () => {
     expect('device_id' in patch).toBe(true);
   });
 
+  it('clears the state fields when switching to a scene trigger', () => {
+    const patch = getTriggerPlatformSwitchPatch(
+      { trigger: 'state', entity_id: 'light.living', to: 'on', for: { minutes: 5 } },
+      'scene'
+    );
+
+    expect(patch.trigger).toBe('scene');
+    expect(patch.to).toBeUndefined();
+    expect(patch.for).toBeUndefined();
+    expect('entity_id' in patch).toBe(false);
+  });
+
   it('keeps keys shared by both platforms', () => {
     const patch = getTriggerPlatformSwitchPatch(
       { trigger: 'zone', entity_id: 'person.a', zone: 'zone.home', alias: 'Leaving home' },

@@ -10,6 +10,13 @@ interface TriggerNodeProps extends NodeProps {
   data: TriggerNodeData;
 }
 
+function formatEntityIds(value: unknown): string | undefined {
+  if (Array.isArray(value)) {
+    return value.filter((entityId): entityId is string => typeof entityId === 'string').join(', ');
+  }
+  return typeof value === 'string' && value.length > 0 ? value : undefined;
+}
+
 export const TriggerNode = memo(function TriggerNode({ id, data, selected }: TriggerNodeProps) {
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
@@ -28,6 +35,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
     sun: 'Sun',
     zone: 'Zone',
     numeric_state: 'Numeric State',
+    scene: 'Scene',
     template: 'Template',
     homeassistant: 'Home Assistant',
     device: 'Device',
@@ -57,9 +65,7 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
       case 'numeric_state':
         return {
           title: data.alias || 'Numeric State',
-          subtitle: Array.isArray(data.entity_id)
-            ? data.entity_id.join(', ')
-            : data.entity_id || 'Numeric State',
+          subtitle: formatEntityIds(data.entity_id) || 'Numeric State',
           detail:
             data.above || data.below
               ? `${data.above ? `>${data.above}` : ''}${data.above && data.below ? ' ' : ''}${data.below ? `<${data.below}` : ''}`
@@ -105,10 +111,14 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         return {
           title: data.alias || 'Zone',
           subtitle: triggerLabels[triggerType],
-          detail:
-            data.zone ||
-            (Array.isArray(data.entity_id) ? data.entity_id.join(', ') : data.entity_id) ||
-            null,
+          detail: data.zone || formatEntityIds(data.entity_id) || null,
+        };
+
+      case 'scene':
+        return {
+          title: data.alias || 'Scene',
+          subtitle: triggerLabels[triggerType],
+          detail: formatEntityIds(data.entity_id) || null,
         };
 
       default:
