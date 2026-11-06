@@ -10,6 +10,19 @@ declare const window: Window & {
   hass?: HomeAssistant;
 };
 
+const APP_PATH = '/cafe-hass/index.html';
+
+/**
+ * Home Assistant serves everything under /cafe-hass with a one year cache,
+ * and index.html keeps its name across builds, so the version stamp that
+ * panel.py puts on panel-wrapper.js is forwarded to the iframe document.
+ */
+function appUrl(): string {
+  const version = new URL(import.meta.url).searchParams.get('v');
+
+  return version ? `${APP_PATH}?v=${encodeURIComponent(version)}` : APP_PATH;
+}
+
 class CafePanelWrapper extends HTMLElement {
   private _messageHandler?: (event: MessageEvent) => void;
   private _resizeHandler?: () => void;
@@ -71,7 +84,7 @@ class CafePanelWrapper extends HTMLElement {
 
     // Create iframe pointing to the app
     this.iframe = document.createElement('iframe');
-    this.iframe.src = '/cafe-hass/index.html';
+    this.iframe.src = appUrl();
     this.iframe.style.width = '100%';
     this.iframe.style.height = '100%';
     this.iframe.style.border = 'none';
