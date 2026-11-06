@@ -5,7 +5,7 @@ import type {
   FlowNode,
   NodeValidationError,
 } from '@cafe/shared';
-import { validateNodeData } from '@cafe/shared';
+import { hasBlockingValidationErrors, validateNodeData } from '@cafe/shared';
 import { FlowTranspiler } from '@cafe/transpiler';
 import {
   addEdge,
@@ -321,9 +321,9 @@ function assertNodesAreValid(
   nodeErrors: Map<string, NodeValidationError[]>,
   selectNode: (nodeId: string) => void
 ): void {
-  if (nodeErrors.size === 0) return;
+  const invalid = nodes.filter((n) => hasBlockingValidationErrors(nodeErrors.get(n.id)));
+  if (invalid.length === 0) return;
 
-  const invalid = nodes.filter((n) => nodeErrors.has(n.id));
   const firstInvalid = invalid[0];
   if (firstInvalid) {
     selectNode(firstInvalid.id);
@@ -335,7 +335,7 @@ function assertNodesAreValid(
   const named = names.length > 0 ? `: ${shown}${remaining}` : '';
 
   throw new Error(
-    `Cannot save: ${nodeErrors.size} node(s) have validation errors${named}. ` +
+    `Cannot save: ${invalid.length} node(s) have validation errors${named}. ` +
       `They are highlighted in red — the first one is now selected, and "fit view" will bring it into sight if it is off-screen.`
   );
 }
@@ -352,7 +352,11 @@ function findDuplicateIdErrors(nodes: Node<FlowNodeData>[]): Map<string, NodeVal
   for (const [, nodeIds] of idToNodeIds) {
     if (nodeIds.length < 2) continue;
     for (const nodeId of nodeIds) {
-      errors.set(nodeId, { path: ['id'], message: 'errors:validation.node.duplicateId' });
+      errors.set(nodeId, {
+        path: ['id'],
+        message: 'errors:validation.node.duplicateId',
+        severity: 'error',
+      });
     }
   }
   return errors;
@@ -1170,7 +1174,7 @@ export const useFlowStore = create<FlowState>()(
         },
 
         hasValidationErrors: () => {
-          return get().nodeErrors.size > 0;
+          return [...get().nodeErrors.values()].some(hasBlockingValidationErrors);
         },
       }),
       {

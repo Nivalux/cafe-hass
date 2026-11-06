@@ -421,12 +421,86 @@ export function getNodeValidationSchema(nodeType: string): z.ZodSchema | undefin
   }
 }
 
+export type NodeValidationSeverity = 'error' | 'warning';
+
 /**
  * Validation error structure
  */
 export interface NodeValidationError {
   path: string[];
   message: string;
+  severity: NodeValidationSeverity;
+}
+
+export function isBlockingValidationError(error: NodeValidationError): boolean {
+  return error.severity !== 'warning';
+}
+
+export function hasBlockingValidationErrors(
+  errors: readonly NodeValidationError[] | undefined
+): boolean {
+  return (errors ?? []).some(isBlockingValidationError);
+}
+
+const LOGICAL_GROUP_TYPES = ['and', 'or', 'not'] as const;
+const GROUP_LABELS: Record<(typeof LOGICAL_GROUP_TYPES)[number], string> = {
+  and: 'AND',
+  or: 'OR',
+  not: 'NOT',
+};
+
+function asConditionGroup(value: unknown): Record<string, unknown> | null {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return null;
+  }
+
+  const condition = (value as Record<string, unknown>).condition;
+
+  return LOGICAL_GROUP_TYPES.includes(condition as (typeof LOGICAL_GROUP_TYPES)[number])
+    ? (value as Record<string, unknown>)
+    : null;
+}
+
+/**
+ * Walk a condition value and flag logical groups that cannot do anything useful.
+ *
+ * An empty AND/OR/NOT is not a harmless no-op: Home Assistant reads an empty list
+ * as "nothing to check", so the branch silently takes the value the user did not
+ * mean. A group with a single condition is valid, just redundant, so it only
+ * warns.
+ */
+export function validateConditionTree(
+  condition: unknown,
+  path: readonly string[] = []
+): NodeValidationError[] {
+  const group = asConditionGroup(condition);
+  if (!group) {
+    return [];
+  }
+
+  const children = Array.isArray(group.conditions) ? group.conditions : [];
+  const label = GROUP_LABELS[group.condition as (typeof LOGICAL_GROUP_TYPES)[number]];
+  const issues: NodeValidationError[] = [];
+
+  if (children.length === 0) {
+    issues.push({
+      path: [...path, 'conditions'],
+      message: `${label} condition group is empty - add at least one condition`,
+      severity: 'error',
+    });
+  } else if (children.length === 1 && label !== 'NOT') {
+    issues.push({
+      path: [...path, 'conditions'],
+      message: `${label} condition group has a single condition - it behaves exactly like no group at all`,
+      severity: 'warning',
+    });
+  }
+
+  children.forEach((child, index) => {
+    issues.push(...validateConditionTree(child, [...path, 'conditions', String(index)]));
+  });
+
+  return issues;
 }
 
 /**
@@ -443,12 +517,17 @@ export function validateNodeData(
   }
 
   const result = schema.safeParse(data);
-  if (result.success) {
-    return [];
+  const issues: NodeValidationError[] = result.success
+    ? []
+    : result.error.issues.map((issue) => ({
+        path: issue.path.map(String),
+        message: issue.message,
+        severity: 'error' as const,
+      }));
+
+  if (nodeType === 'condition') {
+    issues.push(...validateConditionTree(data));
   }
 
-  return result.error.issues.map((issue) => ({
-    path: issue.path.map(String),
-    message: issue.message,
-  }));
+  return issues;
 }

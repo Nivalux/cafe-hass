@@ -1,10 +1,11 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { AlertCircle, Ban, Zap } from 'lucide-react';
+import { Zap } from 'lucide-react';
 import { memo } from 'react';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
 import { cn } from '@/lib/utils';
 import type { TriggerNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
+import { NodeStatusBadge, nodeValidationClasses } from './NodeStatusBadge';
 
 interface TriggerNodeProps extends NodeProps {
   data: TriggerNodeData;
@@ -20,7 +21,7 @@ function formatEntityIds(value: unknown): string | undefined {
 export const TriggerNode = memo(function TriggerNode({ id, data, selected }: TriggerNodeProps) {
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
-  const { hasErrors, errorMessages } = useNodeErrors(id);
+  const { hasErrors, hasWarnings, errorMessages, warningMessages } = useNodeErrors(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -140,22 +141,15 @@ export const TriggerNode = memo(function TriggerNode({ id, data, selected }: Tri
         selected && 'ring-2 ring-amber-500 ring-offset-2',
         isActive && 'node-active ring-4 ring-green-500',
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && 'border-red-500 ring-2 ring-red-400'
+        nodeValidationClasses(hasErrors, hasWarnings)
       )}
     >
-      {hasErrors && (
-        <div
-          className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
-          title={errorMessages.join('\n')}
-        >
-          <AlertCircle className="h-3 w-3" />
-        </div>
-      )}
-      {isDisabled && !hasErrors && (
-        <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
-          <Ban className="h-3 w-3" />
-        </div>
-      )}
+      <NodeStatusBadge
+        hasErrors={hasErrors}
+        hasWarnings={hasWarnings}
+        isDisabled={isDisabled}
+        messages={[...errorMessages, ...warningMessages]}
+      />
       <div className="mb-1 flex items-center gap-2">
         <div className="rounded bg-amber-200 p-1">
           <Zap className="h-4 w-4 text-amber-700" />

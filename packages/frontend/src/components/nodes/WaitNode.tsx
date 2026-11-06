@@ -1,5 +1,5 @@
 import { Handle, type NodeProps, Position } from '@xyflow/react';
-import { AlertCircle, Ban, Hourglass } from 'lucide-react';
+import { Hourglass } from 'lucide-react';
 import { memo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNodeErrors } from '@/hooks/useNodeErrors';
@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import type { WaitNodeData } from '@/store/flow-store';
 import { useFlowStore } from '@/store/flow-store';
 import { formatDuration } from './formatDuration';
+import { NodeStatusBadge, nodeValidationClasses } from './NodeStatusBadge';
 
 interface WaitNodeProps extends NodeProps {
   data: WaitNodeData;
@@ -16,7 +17,7 @@ export const WaitNode = memo(function WaitNode({ id, data, selected }: WaitNodeP
   const { t } = useTranslation(['common', 'nodes']);
   const activeNodeId = useFlowStore((s) => s.activeNodeId);
   const getExecutionStepNumber = useFlowStore((s) => s.getExecutionStepNumber);
-  const { hasErrors, errorMessages } = useNodeErrors(id);
+  const { hasErrors, hasWarnings, errorMessages, warningMessages } = useNodeErrors(id);
   const isActive = activeNodeId === id;
   const stepNumber = getExecutionStepNumber(id);
   const isDisabled = data.enabled === false;
@@ -32,22 +33,15 @@ export const WaitNode = memo(function WaitNode({ id, data, selected }: WaitNodeP
         selected && 'ring-2 ring-orange-500 ring-offset-2',
         isActive && 'node-active ring-4 ring-green-500',
         isDisabled && 'border-dashed opacity-50 grayscale',
-        hasErrors && 'border-red-500 ring-2 ring-red-400'
+        nodeValidationClasses(hasErrors, hasWarnings)
       )}
     >
-      {hasErrors && (
-        <div
-          className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-white shadow-sm"
-          title={errorMessages.join('\n')}
-        >
-          <AlertCircle className="h-3 w-3" />
-        </div>
-      )}
-      {isDisabled && !hasErrors && (
-        <div className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center rounded-full bg-gray-500 text-white shadow-sm">
-          <Ban className="h-3 w-3" />
-        </div>
-      )}
+      <NodeStatusBadge
+        hasErrors={hasErrors}
+        hasWarnings={hasWarnings}
+        isDisabled={isDisabled}
+        messages={[...errorMessages, ...warningMessages]}
+      />
       <Handle
         type="target"
         position={Position.Left}
