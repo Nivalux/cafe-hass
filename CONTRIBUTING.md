@@ -9,8 +9,12 @@ Thank you for considering contributing to C.A.F.E. This document explains how to
 - **Clone the repo**:
   - `git clone <repo-url>`
   - `cd cafe-hass`
+- **Dev shell (optional, Nix)**: `nix-shell` drops you into a shell with Node.js, Yarn,
+  `just`, Podman and a working `biome` wrapper (the biome binary shipped through npm does
+  not run on NixOS without one). There are no tracked Nix inputs: the shell uses your
+  `<nixpkgs>` channel.
 - **Install**: The repository uses Yarn 4 workspaces. From the repository root run:
-  - `yarn install`
+  - `yarn install` (or `just install`)
 - **Start development**: To run the frontend in watch/dev mode for local development:
   - `yarn dev` (from the `cafe-hass` folder in monorepo the root scripts will route properly)
 
@@ -34,6 +38,35 @@ See the repository root and the `packages` folder for the full layout.
 - Lint/format: `yarn check` and `yarn format`
 
 If you need to run a command inside a package, change into that package directory and run the command there (for example `cd packages/frontend && yarn dev`).
+
+## Task Runner
+
+The `justfile` wraps the commands above plus the Home Assistant harness; run `just` (or
+`just --list`) to see everything.
+
+- `just check` — typecheck, lint and unit tests
+- `just test-podman` — transpiles a set of flows and validates the generated YAML with the
+  official Home Assistant container, using Home Assistant's own automation validator. This
+  catches YAML that C.A.F.E. accepts but Home Assistant rejects (fixtures prefixed with
+  `must-fail-` are expected to be rejected, which keeps the harness honest).
+- `just bundle` — builds the panel and packs `custom_components/cafe` into
+  `dist-ha/cafe-<version>-<sha>.tar.gz`, for copying onto a running Home Assistant
+  (unpack it over `<config>/custom_components` and restart)
+- `just ha-up` / `just ha-logs` / `just ha-down` — a throwaway Home Assistant on
+  http://localhost:8123 with the C.A.F.E. panel built in, for manual testing
+
+Both `just test-podman` and CI call `tools/ha-validation/run.sh`, which picks podman or
+docker, pulls the Home Assistant image and exits non-zero when a fixture is rejected. The
+`.github/workflows/ha-validation.yml` workflow runs it on pull requests and on a manual
+`Run workflow` trigger.
+
+The image is `ghcr.io/home-assistant/home-assistant:latest`, always refreshed before the run.
+Because a tag can point at a build that is months old, the script compares the version inside
+that image with the newest stable release from the Home Assistant release feed and refuses to
+run when the image is older than the current release (the previous release is still accepted,
+since images lag a new release by a few hours). If the newest release itself looks older than
+45 days, the check fails too, so a broken reference cannot silently green-light everything.
+Set `CAFE_HA_IMAGE` to validate against another release.
 
 ## Development Guidelines
 

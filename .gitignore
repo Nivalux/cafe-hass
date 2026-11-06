@@ -10,6 +10,7 @@ node_modules/
 
 # Build outputs
 dist/
+dist-ha/
 *.tsbuildinfo
 
 # IDE
@@ -42,3 +43,7 @@ custom_components/cafe/www/
 # Python
 __pycache__/
 *.pyc
+
+# Nix build results
+result
+result-*

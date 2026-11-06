@@ -1,0 +1,39 @@
+name: HA YAML Validation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ha-validation-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Generated YAML against Home Assistant
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "yarn"
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Build shared and transpiler packages
+        run: |
+          yarn workspace @cafe/shared build
+          yarn workspace @cafe/transpiler build
+
+      - name: Validate with the Home Assistant container
+        run: ./tools/ha-validation/run.sh
