@@ -34,7 +34,6 @@ export function RightSidebar({ isCompactLayout, canvasCovered = false }: RightSi
   const { t } = useTranslation(['common', 'errors']);
   const {
     selectedNodeId,
-    clearCanvasSelection,
     rightPanelExpanded,
     setRightPanelExpanded,
     toggleRightPanelExpanded,
@@ -56,9 +55,13 @@ export function RightSidebar({ isCompactLayout, canvasCovered = false }: RightSi
     }
   }, [isCompactLayout, setRightPanelExpanded]);
 
+  /**
+   * Collapsing must keep the selection: on phones this is how the user gets back
+   * to the canvas, and dropping the selection there would also drop the node
+   * actions from the header, leaving no way to delete the node.
+   */
   const handleCollapse = () => {
     setRightPanelExpanded(false);
-    clearCanvasSelection();
   };
 
   const handleRightTabChange = (value: string) => {
