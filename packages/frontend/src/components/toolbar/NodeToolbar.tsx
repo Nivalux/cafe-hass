@@ -1,12 +1,21 @@
 import { Panel } from '@xyflow/react';
+import { useCompactLayout } from '@/hooks/useCompactLayout';
 import { cn } from '@/lib/utils';
 import { NodeActionBar } from './NodeActionBar';
 import { groupNodeActions, useNodeActionShortcuts, useNodeActions } from './useNodeActions';
 
-/** Canvas action panel. */
+/**
+ * Canvas action panel. On phones the header takes over while a node is selected,
+ * since the properties panel covers the canvas there.
+ */
 export function NodeToolbar() {
   const { context, actions } = useNodeActions();
+  const { isCompactLayout } = useCompactLayout();
   useNodeActionShortcuts(actions, context);
+
+  if (isCompactLayout && context.selectedNodes.length > 0) {
+    return null;
+  }
 
   return (
     <Panel

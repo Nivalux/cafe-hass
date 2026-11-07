@@ -25,7 +25,8 @@
     "toggleSidebar": "切换侧边栏",
     "expandPropertiesPanel": "展开属性面板",
     "collapsePropertiesPanel": "收起属性面板",
-    "deleteConnection": "删除连接"
+    "deleteConnection": "删除连接",
+    "moreActions": "更多操作"
   },
   "labels": {
     "automationName": "自动化名称",

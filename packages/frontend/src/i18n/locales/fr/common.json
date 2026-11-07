@@ -25,7 +25,8 @@
     "toggleSidebar": "Basculer la barre latérale",
     "expandPropertiesPanel": "Développer le panneau des propriétés",
     "collapsePropertiesPanel": "Réduire le panneau des propriétés",
-    "deleteConnection": "Supprimer la connexion"
+    "deleteConnection": "Supprimer la connexion",
+    "moreActions": "Actions supplémentaires"
   },
   "labels": {
     "automationName": "Nom de l'automatisation",

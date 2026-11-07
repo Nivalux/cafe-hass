@@ -26,6 +26,7 @@ import { HassSettings } from '@/components/panels/HassSettings';
 import { ImportYamlDialog } from '@/components/panels/ImportYamlDialog';
 import { NodePaletteSidebar } from '@/components/panels/NodePaletteSidebar';
 import { RightSidebar } from '@/components/panels/RightSidebar';
+import { NodeSelectionActions } from '@/components/toolbar/NodeSelectionActions';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -45,6 +46,7 @@ import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { COMPACT_NODE_PALETTE_COLLAPSED_WIDTH } from './components/panels/layout';
 import { useHass } from './contexts/HassContext';
+import { useCompactLayout } from './hooks/useCompactLayout';
 import { useDarkMode } from './hooks/useDarkMode';
 import { useLanguage } from './hooks/useLanguage';
 import { useFlowStore } from './store/flow-store';
@@ -71,8 +73,9 @@ function App() {
     setConfig,
   } = useHass();
 
-  const { flowName, reset, automationId, hasUnsavedChanges, isSaving, hasRealChanges } =
+  const { flowName, reset, automationId, hasUnsavedChanges, isSaving, hasRealChanges, nodes } =
     useFlowStore();
+  const hasNodeSelection = nodes.some((node) => node.selected);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [importYamlOpen, setImportYamlOpen] = useState(false);
   const [automationImportOpen, setAutomationImportOpen] = useState(false);
@@ -81,11 +84,7 @@ function App() {
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const [mobilePaletteExpanded, setMobilePaletteExpanded] = useState(false);
   const [desktopPaletteExpanded, setDesktopPaletteExpanded] = useState(true);
-  const [parentWidth, setParentWidth] = useState(() => {
-    const win = window.parent ?? window;
-    return win.innerWidth;
-  });
-  const isCompactLayout = parentWidth < 1024;
+  const { isCompactLayout } = useCompactLayout();
   const forceSettingsOpen = actualIsRemote && (config.url === '' || config.token === '');
   const isDark = useDarkMode();
 
@@ -95,16 +94,6 @@ function App() {
   useEffect(() => {
     document.body.classList.toggle('dark', isDark);
   }, [isDark]);
-
-  useEffect(() => {
-    const win = window.parent ?? window;
-    const handleResize = () => {
-      setParentWidth(win.innerWidth);
-    };
-
-    win.addEventListener('resize', handleResize);
-    return () => win.removeEventListener('resize', handleResize);
-  }, []);
 
   // Determine connection status display
   const getConnectionStatus = () => {
@@ -269,47 +258,53 @@ function App() {
 
               {!isCompactLayout && <Separator orientation="vertical" className="h-6" />}
 
-              {/* Open Automation Button with Import Dropdown */}
-              <div className="flex">
-                {/* Main Open Button */}
-                <Button
-                  onClick={() => {
-                    setAutomationImportOpen(true);
-                  }}
-                  className="rounded-r-none"
-                >
-                  <FolderOpenDotIcon className={cn('h-4 w-4', !isCompactLayout && 'mr-2')} />
-                  {!isCompactLayout && t('buttons.openAutomation')}
-                </Button>
-
-                {/* Dropdown Toggle */}
-                <DropdownMenu open={importDropdownOpen} onOpenChange={setImportDropdownOpen}>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="default" className="rounded-l-none border-l px-2">
-                      <ChevronDown className="h-4 w-4" />
+              {isCompactLayout && hasNodeSelection ? (
+                <NodeSelectionActions />
+              ) : (
+                <>
+                  {/* Open Automation Button with Import Dropdown */}
+                  <div className="flex">
+                    {/* Main Open Button */}
+                    <Button
+                      onClick={() => {
+                        setAutomationImportOpen(true);
+                      }}
+                      className="rounded-r-none"
+                    >
+                      <FolderOpenDotIcon className={cn('h-4 w-4', !isCompactLayout && 'mr-2')} />
+                      {!isCompactLayout && t('buttons.openAutomation')}
                     </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={reset}>
-                      <DiamondPlus className="mr-2 size-4" />
-                      {t('buttons.newAutomation')}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => setImportYamlOpen(true)}>
-                      <FileCode className="mr-2 h-4 w-4" />
-                      {t('buttons.importYaml')}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
 
-              <Button
-                onClick={() => setClearConfirmOpen(true)}
-                variant="ghost"
-                size="icon"
-                title={t('titles.clearAutomation')}
-              >
-                <BrushCleaning className="h-5 w-5" />
-              </Button>
+                    {/* Dropdown Toggle */}
+                    <DropdownMenu open={importDropdownOpen} onOpenChange={setImportDropdownOpen}>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="default" className="rounded-l-none border-l px-2">
+                          <ChevronDown className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={reset}>
+                          <DiamondPlus className="mr-2 size-4" />
+                          {t('buttons.newAutomation')}
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setImportYamlOpen(true)}>
+                          <FileCode className="mr-2 h-4 w-4" />
+                          {t('buttons.importYaml')}
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+
+                  <Button
+                    onClick={() => setClearConfirmOpen(true)}
+                    variant="ghost"
+                    size="icon"
+                    title={t('titles.clearAutomation')}
+                  >
+                    <BrushCleaning className="h-5 w-5" />
+                  </Button>
+                </>
+              )}
 
               <Button
                 onClick={() => setSaveDialogOpen(true)}

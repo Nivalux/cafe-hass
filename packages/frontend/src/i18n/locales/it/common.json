@@ -25,7 +25,8 @@
     "toggleSidebar": "Attiva/disattiva barra laterale",
     "expandPropertiesPanel": "Espandi pannello proprietà",
     "collapsePropertiesPanel": "Comprimi pannello proprietà",
-    "deleteConnection": "Elimina connessione"
+    "deleteConnection": "Elimina connessione",
+    "moreActions": "Altre azioni"
   },
   "labels": {
     "automationName": "Nome automazione",

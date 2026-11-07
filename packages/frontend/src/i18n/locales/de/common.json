@@ -25,7 +25,8 @@
     "toggleSidebar": "Seitenleiste umschalten",
     "expandPropertiesPanel": "Eigenschaftenfenster ausklappen",
     "collapsePropertiesPanel": "Eigenschaftenfenster einklappen",
-    "deleteConnection": "Verbindung löschen"
+    "deleteConnection": "Verbindung löschen",
+    "moreActions": "Weitere Aktionen"
   },
   "labels": {
     "automationName": "Automatisierungsname",

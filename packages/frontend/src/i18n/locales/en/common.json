@@ -25,7 +25,8 @@
     "toggleSidebar": "Toggle sidebar",
     "expandPropertiesPanel": "Expand properties panel",
     "collapsePropertiesPanel": "Collapse properties panel",
-    "deleteConnection": "Delete connection"
+    "deleteConnection": "Delete connection",
+    "moreActions": "More actions"
   },
   "labels": {
     "automationName": "Automation name",
